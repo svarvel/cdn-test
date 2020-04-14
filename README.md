@@ -2,9 +2,9 @@
 Tool to test content retrieval over CDNs in the wild
 
 # Requirements
-OS: MacOS/Linux 
+OS: MacOS/Linux  (tested on Mojave and Raspbian/Ubuntu)
 
-software: CURL
+software: curl (https://curl.haxx.se/)
 
 
 # What does it do and collect? 
