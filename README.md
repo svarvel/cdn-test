@@ -6,7 +6,9 @@ The script simply fetches a file 3 times: 1) directly from source CDN, 2) via a 
 
 # Instructions
 git clone git@github.com:svarvel/cdn-test.git
+
 cd cdn-test
+
 ./simple-test.sh
 
 
