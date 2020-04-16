@@ -133,3 +133,7 @@ test_download "https://cloudflare1-dev.brave.info/5mb" "cloudflare-fastly"
 
 # test direct download via Fastly (and report results)
 test_download "https://fastly-dev.brave.info/5mb" "fastly-cached"
+
+# test private-vpn download (and report results)
+test_download "https://cloudflare1-dev.brave.info/5mb" "cloudflare-fastly-cached"
+
