@@ -1,7 +1,7 @@
 #!/bin/bash
 ## Author: Matteo Varvello (varvello@brave.com)
 ## Date: 04-14-2020
-## NOTE: Tool to test Brave's private-VPN solution and compare with Fastly in the wild
+## NOTE: Tool to test Brave's private-VPN solution 
 
 # simple function for logging
 DEBUG=1
@@ -63,6 +63,7 @@ test_download(){
 
 	# curl download 
 	myprint "[CURL] Destination: $dst Label: $label"
+	#echo "curl -v -H \"Accept-Encoding: gzip\" -H 'user-agent: $UA' -w \"@curl-format.txt\" -s $dst -o $out_file > \".stats\"  2>\".headers\""
 	curl -v -H "Accept-Encoding: gzip" -H 'user-agent: $UA' -w "@curl-format.txt" -s $dst -o $out_file > ".stats"  2>".headers"
 	type=`cat ".stats" | head -n 1 | cut -f 1 | cut -f 2 -d ":"`
 	code=`cat ".stats" | head -n 1 |cut -f 2 | cut -f 2 -d ":"`
@@ -86,11 +87,9 @@ test_download(){
 	then
 		tr '\r' '\n' < ".headers" > t
 		mv t ".headers"
-		#x_served=`cat ".headers" | grep "x-served-by" | awk '{print $NF}' | sed 's/\\r//g' | sed 's/^M//g' | sed 's/\\n//g'` 
-		x_served=`cat ".headers" | grep "x-served-by" | awk '{print $NF}'`
-		#age=`cat ".headers" | grep "age:" | awk '{print $NF}' | sed 's/\\r//g' | sed 's/^M//g' | sed 's/\\n//g'`
+		x_served=`cat ".headers" | grep "x-amz-cf-pop\|x-served-by" | awk '{print $NF}'`
 		age=`cat ".headers" | grep "age:" | awk '{print $NF}'`
-		cat ".headers" | grep "HIT" > /dev/null
+		cat ".headers" | grep -i "HIT" > /dev/null
 		if [ $? -eq 0 ] 
 		then 
 			cache_hit="True"
@@ -114,6 +113,13 @@ test_download(){
 	curl  -H "Content-Type:application/json" -X POST -d "$(generate_post_data)" https://nj.batterylab.dev:8080/dCURL
 }
 
+# read num reps as a param (if passed) 
+num_reps=6
+if [ $# -eq 1 ] 
+then 
+	num_reps=$1
+fi
+
 # check for macOS
 isMacOS="false"
 uname -a | grep "Darwin" > /dev/null
@@ -122,18 +128,20 @@ then
 	isMacOS="true"
 fi 
 
-# generate "unique" used ir 
-uid=`date +%s`
+# common test identifier 
+base_uid=`date +%s`
 
-# test direct download via Fastly (and report results)
-test_download "https://fastly-dev.brave.info/5mb" "fastly"
+# iterate on repetitions
+for((i=0; i<num_reps; i++))
+do 
+	# test id for this rep 
+	uid="${base_uid}-${i}"
 
-# test private-vpn download (and report results)
-test_download "https://cloudflare1-dev.brave.info/5mb" "cloudflare-fastly"
+	# CDN-A test 
+	test_download "https://fastly-dev.brave.info/5mb" "fastly"
+	test_download "https://cloudflare1-dev.brave.info/5mb" "cloudflare-fastly"
 
-# test direct download via Fastly (and report results)
-test_download "https://fastly-dev.brave.info/5mb" "fastly-cached"
-
-# test private-vpn download (and report results)
-test_download "https://cloudflare1-dev.brave.info/5mb" "cloudflare-fastly-cached"
-
+	# CDN-B test
+	test_download "https://cloudfront-dev.brave.info/5mb" "cloudfront"
+	test_download "https://cloudflare2-dev.brave.info/5mb" "cloudflare-cloudfront"
+done 
